@@ -15,12 +15,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: () => request<any>("/health"),
   reloadDbt: () => request<any>("/dbt/reload", { method: "POST" }),
-  createRequirement: (raw_text: string) =>
+  requirementBoard: () => request<any>("/requirements?status=published"),
+  createRequirement: (raw_text: string, role = "analyst") =>
     request<any>("/requirements", {
       method: "POST",
-      body: JSON.stringify({ raw_text }),
+      body: JSON.stringify({ raw_text, role, user_id: role }),
     }),
   getRequirement: (rid: string) => request<any>(`/requirements/${rid}`),
+  publishRequirement: (rid: string) => request<any>(`/requirements/${rid}/publish`, { method: "POST" }),
   clarify: (rid: string) => request<any>(`/requirements/${rid}/clarify`, { method: "POST" }),
   answerClarify: (rid: string, answers: Record<string, string>) =>
     request<any>("/requirements/clarify/answer", {

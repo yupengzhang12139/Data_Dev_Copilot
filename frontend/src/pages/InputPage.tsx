@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { Layout } from "../components/Layout";
+import { getRole } from "../session";
 
 const SAMPLES = [
   "我想新增一个用户 7 日留存指标，用于增长日报，希望按渠道、版本、注册日期分析，排除测试账号和内部员工。",
@@ -23,7 +24,7 @@ export function InputPage() {
     if (!text.trim()) return;
     setSubmitting(true);
     try {
-      const res = await api.createRequirement(text.trim());
+      const res = await api.createRequirement(text.trim(), getRole() || "analyst");
       navigate(`/r/${res.requirement_id}/clarify`);
     } catch (e: any) {
       alert(e.message);
@@ -37,7 +38,7 @@ export function InputPage() {
       <section className="card p-6">
         <h2 className="text-lg font-semibold">1. 自然语言需求输入</h2>
         <p className="mt-1 text-sm text-slate-500">
-          直接描述业务背景、目标和指标需求，AI 最多追问 3 轮帮你补齐口径。
+          直接描述业务背景、目标和指标需求，AI 最多追问 3 轮帮你补齐口径；确认后可发布到公共需求看板。
         </p>
         <textarea
           className="mt-4 w-full rounded-md border border-slate-300 p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
@@ -63,8 +64,36 @@ export function InputPage() {
             {submitting ? "提交中..." : "开始澄清需求"}
           </button>
           <span className="text-xs text-slate-400">
-            提交后将进入需求澄清 Agent，最多追问 3 轮。
+            提交后将进入分析师工作流，最终以“发布需求”结束。
           </span>
+        </div>
+      </section>
+
+      <section className="card p-6 mt-6">
+        <h3 className="font-semibold mb-3">按角色使用</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="rounded-md border border-brand-100 bg-brand-50 p-4">
+            <div className="font-medium text-brand-700">分析师</div>
+            <div className="mt-2 text-slate-600">
+              从自然语言提需求开始，补充指标口径，查看历史相似口径、数仓血缘和冲突证据。
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["提需求", "给口径", "看相似口径", "确认冲突"].map((item) => (
+                <span key={item} className="tag bg-white text-brand-700 ring-1 ring-brand-100">{item}</span>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-md border border-emerald-100 bg-emerald-50 p-4">
+            <div className="font-medium text-emerald-700">数仓开发</div>
+            <div className="mt-2 text-slate-600">
+              接手已确认口径，Review AI 生成的 dbt 代码、Join Key 推荐、schema tests 和验证结果。
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["dbt 开发", "验证数据", "SQL Diff", "上线建议"].map((item) => (
+                <span key={item} className="tag bg-white text-emerald-700 ring-1 ring-emerald-100">{item}</span>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 

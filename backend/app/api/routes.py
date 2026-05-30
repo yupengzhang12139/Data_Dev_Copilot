@@ -1,6 +1,7 @@
 """所有 HTTP 路由：覆盖 9 个 Agent 阶段 + 会话状态 + 埋点 + 元数据。"""
 from __future__ import annotations
 
+import datetime as dt
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -71,7 +72,14 @@ def create_requirement(payload: RequirementCreate, db: Session = Depends(get_db)
         user_id=payload.user_id,
         project_id=payload.project_id,
         stage="clarify",
-        state={"raw_text": payload.raw_text, "round": 0, "confirmed": {}, "pending": [], "risks": []},
+        state={
+            "raw_text": payload.raw_text,
+            "round": 0,
+            "confirmed": {},
+            "pending": [],
+            "risks": [],
+            "owner_role": payload.role,
+        },
     )
     db.add(req)
     db.commit()
@@ -82,12 +90,39 @@ def create_requirement(payload: RequirementCreate, db: Session = Depends(get_db)
         requirement_id=req.id,
         properties={
             "user_id": payload.user_id,
-            "role": "analyst",
+            "role": payload.role,
             "requirement_length": len(payload.raw_text),
             "project_id": payload.project_id,
         },
     )
     return {"requirement_id": req.id, "stage": req.stage, "state": req.state}
+
+
+@router.get("/requirements")
+def list_requirements(status: str | None = None, db: Session = Depends(get_db)) -> dict[str, Any]:
+    rows = db.query(Requirement).order_by(Requirement.updated_at.desc()).all()
+    items: list[dict[str, Any]] = []
+    for req in rows:
+        state = dict(req.state or {})
+        published = bool(state.get("published_at"))
+        if status == "published" and not published:
+            continue
+        items.append(
+            {
+                "requirement_id": req.id,
+                "stage": req.stage,
+                "status": state.get("board_status") or ("published" if published else req.stage),
+                "raw_text": req.raw_text,
+                "project_id": req.project_id,
+                "user_id": req.user_id,
+                "confirmed": state.get("confirmed", {}),
+                "published_at": state.get("published_at"),
+                "claimed_by": state.get("claimed_by"),
+                "created_at": req.created_at.isoformat(),
+                "updated_at": req.updated_at.isoformat(),
+            }
+        )
+    return {"requirements": items}
 
 
 @router.get("/requirements/{rid}")
@@ -104,6 +139,25 @@ def get_requirement(rid: str, db: Session = Depends(get_db)) -> dict[str, Any]:
             for a in arts
         ],
     }
+
+
+@router.post("/requirements/{rid}/publish")
+def publish_requirement(rid: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+    req = _get_requirement(db, rid)
+    state = dict(req.state or {})
+    now = dt.datetime.utcnow().isoformat()
+    state["published_at"] = state.get("published_at") or now
+    state["board_status"] = "published"
+    req.state = state
+    req.stage = "published"
+    db.commit()
+    telemetry.emit(
+        db,
+        "data_dev_requirement_published",
+        requirement_id=rid,
+        properties={"project_id": req.project_id, "confirmed_field_count": len(state.get("confirmed", {}))},
+    )
+    return {"requirement_id": rid, "stage": req.stage, "state": state}
 
 
 @router.post("/requirements/{rid}/clarify")
@@ -315,6 +369,9 @@ def resolve_conflict(payload: ConflictDecision, db: Session = Depends(get_db)) -
 def run_build(rid: str, db: Session = Depends(get_db)) -> dict[str, Any]:
     req = _get_requirement(db, rid)
     state = dict(req.state or {})
+    if state.get("published_at"):
+        state["board_status"] = "in_development"
+        state["claimed_by"] = state.get("claimed_by") or "developer"
     cands = (state.get("history") or {}).get("candidates") or []
     picked_ids = [c["unique_id"] for c in cands[:1]]
     res = dbt_builder.generate(rid, state.get("confirmed", {}), picked_ids)
@@ -395,6 +452,8 @@ def run_validate(rid: str, warehouse_available: bool = True, db: Session = Depen
     }
     _save_artifact(db, rid, "validation", payload)
     state["validation"] = payload
+    if state.get("published_at"):
+        state["board_status"] = "validate"
     req.state = state
     req.stage = "validate"
     db.commit()
@@ -429,6 +488,8 @@ def run_release(rid: str, warehouse_available: bool = True, db: Session = Depend
     advice = sql_diff.release_advice(val["validation"], val["diff_run"], conflict_state, warehouse_available)
     _save_artifact(db, rid, "release_advice", advice)
     state["release"] = advice
+    if state.get("published_at"):
+        state["board_status"] = "release"
     req.state = state
     req.stage = "release"
     db.commit()

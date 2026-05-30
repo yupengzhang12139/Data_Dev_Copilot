@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { BoardPage } from "./pages/BoardPage";
 import { InputPage } from "./pages/InputPage";
+import { LoginPage } from "./pages/LoginPage";
 import { ClarifyPage } from "./pages/ClarifyPage";
 import { PrdPage } from "./pages/PrdPage";
 import { HistoryPage } from "./pages/HistoryPage";
@@ -12,7 +14,9 @@ import { ReleasePage } from "./pages/ReleasePage";
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<InputPage />} />
+      <Route path="/" element={<LoginPage />} />
+      <Route path="/analyst" element={<InputPage />} />
+      <Route path="/board" element={<BoardPage />} />
       <Route path="/r/:rid" element={<Navigate to="clarify" replace />} />
       <Route path="/r/:rid/clarify" element={<ClarifyPage />} />
       <Route path="/r/:rid/prd" element={<PrdPage />} />

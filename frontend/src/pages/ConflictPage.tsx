@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { Layout } from "../components/Layout";
 import { Loading } from "../components/Loading";
+import { getRole } from "../session";
 
 const LEVEL_COLORS: Record<string, string> = {
   high: "bg-red-50 text-red-700 ring-red-200",
@@ -17,6 +18,7 @@ export function ConflictPage() {
   const [loading, setLoading] = useState(true);
   const [decisions, setDecisions] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const role = getRole();
 
   useEffect(() => {
     if (!rid) return;
@@ -37,8 +39,16 @@ export function ConflictPage() {
     if (!rid) return;
     setSubmitting(true);
     try {
-      await api.resolveConflict(rid, decisions);
-      navigate(`/r/${rid}/build`);
+      if (role === "developer") {
+        await api.resolveConflict(rid, decisions);
+        navigate(`/r/${rid}/build`);
+      } else {
+        if (Object.keys(decisions).length > 0) {
+          await api.resolveConflict(rid, decisions);
+        }
+        await api.publishRequirement(rid);
+        navigate("/board");
+      }
     } catch (e: any) {
       alert(e.message);
     } finally {
@@ -47,13 +57,14 @@ export function ConflictPage() {
   };
 
   const blocked = data.blocked && data.conflicts.some((c: any) => c.level === "high" && !decisions[c.asset]);
+  const actionLabel = role === "developer" ? "继续 dbt 代码生成" : "发布需求";
 
   return (
     <Layout current="conflict">
       <section className="card p-6">
         <h2 className="text-lg font-semibold">6. 口径确认</h2>
         <p className="mt-1 text-sm text-slate-500">
-          AI 仅报告冲突 + 证据，不自动裁决；需由分析师或数开人工确认。
+          AI 仅报告冲突 + 证据，不自动裁决；分析师确认后发布到公共需求看板，数仓开发再接入开发。
         </p>
 
         <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
@@ -103,8 +114,11 @@ export function ConflictPage() {
 
         <div className="mt-6 flex items-center gap-3">
           <button className="btn-primary" disabled={submitting || blocked} onClick={proceed}>
-            {blocked ? "存在高风险冲突，请先逐项裁决" : "继续 dbt 代码生成"}
+            {blocked ? "存在高风险冲突，请先逐项裁决" : actionLabel}
           </button>
+          {role !== "developer" ? (
+            <span className="text-xs text-slate-400">发布后，需求会出现在公共需求看板。</span>
+          ) : null}
         </div>
 
         <p className="mt-4 text-xs text-slate-400">{data.compliance_note}</p>

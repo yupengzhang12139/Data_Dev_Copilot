@@ -13,11 +13,13 @@ async function request(path, init) {
 export const api = {
     health: () => request("/health"),
     reloadDbt: () => request("/dbt/reload", { method: "POST" }),
-    createRequirement: (raw_text) => request("/requirements", {
+    requirementBoard: () => request("/requirements?status=published"),
+    createRequirement: (raw_text, role = "analyst") => request("/requirements", {
         method: "POST",
-        body: JSON.stringify({ raw_text }),
+        body: JSON.stringify({ raw_text, role, user_id: role }),
     }),
     getRequirement: (rid) => request(`/requirements/${rid}`),
+    publishRequirement: (rid) => request(`/requirements/${rid}/publish`, { method: "POST" }),
     clarify: (rid) => request(`/requirements/${rid}/clarify`, { method: "POST" }),
     answerClarify: (rid, answers) => request("/requirements/clarify/answer", {
         method: "POST",

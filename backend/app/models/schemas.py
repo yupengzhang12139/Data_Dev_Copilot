@@ -10,6 +10,7 @@ class RequirementCreate(BaseModel):
     raw_text: str = Field(..., description="自然语言需求")
     user_id: str = "analyst"
     project_id: str = "default"
+    role: str = "analyst"
 
 
 class ClarificationAnswer(BaseModel):
