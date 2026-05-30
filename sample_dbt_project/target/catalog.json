@@ -1,0 +1,33 @@
+{
+  "metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json"},
+  "nodes": {
+    "model.sample_project.stg_users": {
+      "columns": {
+        "user_id": {"type": "varchar"},
+        "register_date": {"type": "date"},
+        "channel": {"type": "varchar"},
+        "app_version": {"type": "varchar"},
+        "is_test": {"type": "boolean"},
+        "is_internal": {"type": "boolean"}
+      }
+    },
+    "model.sample_project.stg_user_events": {
+      "columns": {
+        "user_id": {"type": "varchar"},
+        "event_date": {"type": "date"},
+        "event_name": {"type": "varchar"},
+        "channel": {"type": "varchar"},
+        "app_version": {"type": "varchar"}
+      }
+    },
+    "model.sample_project.fct_user_retention_d7": {
+      "columns": {
+        "user_id": {"type": "varchar"},
+        "register_date": {"type": "date"},
+        "channel": {"type": "varchar"},
+        "app_version": {"type": "varchar"},
+        "is_retained_d7": {"type": "integer"}
+      }
+    }
+  }
+}

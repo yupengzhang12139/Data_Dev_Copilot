@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v11.json",
+    "project_name": "sample_project"
+  },
+  "nodes": {
+    "model.sample_project.stg_users": {
+      "resource_type": "model",
+      "name": "stg_users",
+      "schema": "staging",
+      "fqn": ["sample_project", "staging", "stg_users"],
+      "config": {"materialized": "view"},
+      "description": "用户清洗模型，剔除测试账号",
+      "tags": ["staging"],
+      "columns": {
+        "user_id": {"name": "user_id", "description": "用户 ID", "data_type": "varchar",
+          "tests": [{"test_metadata": {"name": "not_null"}}, {"test_metadata": {"name": "unique"}}]},
+        "register_date": {"name": "register_date", "description": "注册日期", "data_type": "date"},
+        "channel": {"name": "channel", "description": "渠道"},
+        "app_version": {"name": "app_version", "description": "版本"},
+        "is_test": {"name": "is_test", "description": "是否测试账号"},
+        "is_internal": {"name": "is_internal", "description": "是否内部员工"}
+      },
+      "depends_on": {"nodes": ["source.sample_project.raw.users"]},
+      "raw_code": "select user_id, register_date, channel, app_version, is_test, is_internal from {{ source('raw', 'users') }} where is_test = false",
+      "original_file_path": "models/staging/stg_users.sql"
+    },
+    "model.sample_project.stg_user_events": {
+      "resource_type": "model",
+      "name": "stg_user_events",
+      "schema": "staging",
+      "fqn": ["sample_project", "staging", "stg_user_events"],
+      "config": {"materialized": "view"},
+      "description": "用户事件清洗模型",
+      "tags": ["staging"],
+      "columns": {
+        "user_id": {"name": "user_id", "description": "用户 ID", "data_type": "varchar",
+          "tests": [{"test_metadata": {"name": "not_null"}}]},
+        "event_date": {"name": "event_date", "description": "事件日期", "data_type": "date"},
+        "event_name": {"name": "event_name", "description": "事件名"},
+        "channel": {"name": "channel"},
+        "app_version": {"name": "app_version"}
+      },
+      "depends_on": {"nodes": ["source.sample_project.raw.user_events"]},
+      "raw_code": "select user_id, event_date, event_name, channel, app_version from {{ source('raw', 'user_events') }}",
+      "original_file_path": "models/staging/stg_user_events.sql"
+    },
+    "model.sample_project.fct_user_retention_d7": {
+      "resource_type": "model",
+      "name": "fct_user_retention_d7",
+      "schema": "marts",
+      "fqn": ["sample_project", "marts", "fct_user_retention_d7"],
+      "config": {"materialized": "incremental"},
+      "description": "用户 7 日留存事实表，用于增长日报",
+      "tags": ["marts", "retention"],
+      "columns": {
+        "user_id": {"name": "user_id", "description": "用户 ID",
+          "tests": [{"test_metadata": {"name": "not_null"}}, {"test_metadata": {"name": "unique"}}]},
+        "register_date": {"name": "register_date", "description": "注册日期",
+          "tests": [{"test_metadata": {"name": "not_null"}}]},
+        "channel": {"name": "channel", "description": "渠道"},
+        "app_version": {"name": "app_version", "description": "应用版本"},
+        "is_retained_d7": {"name": "is_retained_d7", "description": "是否 7 日留存",
+          "tests": [{"test_metadata": {"name": "not_null"}}]}
+      },
+      "depends_on": {"nodes": ["model.sample_project.stg_users", "model.sample_project.stg_user_events"]},
+      "raw_code": "select u.user_id, u.register_date, u.channel, u.app_version, case when e.user_id is not null then 1 else 0 end as is_retained_d7 from {{ ref('stg_users') }} u left join {{ ref('stg_user_events') }} e on u.user_id = e.user_id and e.event_date = u.register_date + interval '7 day' where u.is_internal = false and e.event_date between current_date - interval '14 day' and current_date",
+      "original_file_path": "models/marts/fct_user_retention_d7.sql"
+    },
+    "test.sample_project.unique_fct_user_retention_d7_user_id": {
+      "resource_type": "test",
+      "name": "unique_fct_user_retention_d7_user_id",
+      "test_metadata": {"name": "unique", "kwargs": {"column_name": "user_id"}},
+      "depends_on": {"nodes": ["model.sample_project.fct_user_retention_d7"]}
+    },
+    "test.sample_project.not_null_fct_user_retention_d7_user_id": {
+      "resource_type": "test",
+      "name": "not_null_fct_user_retention_d7_user_id",
+      "test_metadata": {"name": "not_null", "kwargs": {"column_name": "user_id"}},
+      "depends_on": {"nodes": ["model.sample_project.fct_user_retention_d7"]}
+    }
+  },
+  "sources": {
+    "source.sample_project.raw.users": {
+      "resource_type": "source",
+      "name": "users",
+      "schema": "raw",
+      "description": "原始用户表",
+      "original_file_path": "models/sources.yml"
+    },
+    "source.sample_project.raw.user_events": {
+      "resource_type": "source",
+      "name": "user_events",
+      "schema": "raw",
+      "description": "原始用户事件表",
+      "original_file_path": "models/sources.yml"
+    }
+  },
+  "metrics": {
+    "metric.sample_project.user_retention_d7": {
+      "resource_type": "metric",
+      "name": "user_retention_d7",
+      "description": "注册后第 7 天有事件的用户占比",
+      "expression": "sum(is_retained_d7) / count(distinct user_id)",
+      "type": "ratio",
+      "depends_on": {"nodes": ["model.sample_project.fct_user_retention_d7"]},
+      "original_file_path": "models/marts/marts.yml",
+      "tags": ["retention", "growth"]
+    }
+  },
+  "exposures": {
+    "exposure.sample_project.growth_daily_report": {
+      "resource_type": "exposure",
+      "name": "growth_daily_report",
+      "description": "增长日报，消费用户留存指标",
+      "depends_on": {"nodes": ["model.sample_project.fct_user_retention_d7"]},
+      "original_file_path": "models/marts/marts.yml"
+    }
+  }
+}

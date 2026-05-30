@@ -1,0 +1,9 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: users
+        description: 原始用户表
+      - name: user_events
+        description: 原始用户事件表

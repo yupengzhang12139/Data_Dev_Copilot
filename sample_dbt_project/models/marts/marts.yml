@@ -1,0 +1,31 @@
+version: 2
+models:
+  - name: fct_user_retention_d7
+    description: 用户 7 日留存事实表，用于增长日报
+    columns:
+      - name: user_id
+        description: 用户 ID
+        tests: [not_null, unique]
+      - name: register_date
+        description: 注册日期
+        tests: [not_null]
+      - name: channel
+        description: 渠道
+      - name: app_version
+        description: 应用版本
+      - name: is_retained_d7
+        description: 是否 7 日留存
+        tests: [not_null]
+metrics:
+  - name: user_retention_d7
+    label: 用户 7 日留存率
+    model: ref('fct_user_retention_d7')
+    description: 注册后第 7 天有事件的用户占比
+    type: ratio
+    expression: sum(is_retained_d7) / count(distinct user_id)
+exposures:
+  - name: growth_daily_report
+    type: dashboard
+    description: 增长日报，消费用户留存指标
+    depends_on:
+      - ref('fct_user_retention_d7')
