@@ -66,9 +66,8 @@ def chat_json(
         return None
 
     if isinstance(user, dict):
-        if redact:
-            user = redact_payload(user)
-        user_text = json.dumps(user, ensure_ascii=False)
+        user_payload: Any = redact_payload(user) if redact else user
+        user_text = json.dumps(user_payload, ensure_ascii=False)
     else:
         user_text = redact_text(user) if redact else user
 

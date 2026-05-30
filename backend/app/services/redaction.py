@@ -6,6 +6,8 @@
 from __future__ import annotations
 
 import re
+from typing import Any
+
 
 _PATTERNS: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"1[3-9]\d{9}"), "[REDACTED:PHONE]"),
@@ -34,7 +36,7 @@ def is_forbidden(key: str) -> bool:
     return any(key.upper().startswith(p) for p in _FORBIDDEN_PREFIX)
 
 
-def redact_payload(payload):
+def redact_payload(payload: Any) -> Any:
     """对结构化 payload 递归脱敏。"""
     if isinstance(payload, str):
         return redact_text(payload)
