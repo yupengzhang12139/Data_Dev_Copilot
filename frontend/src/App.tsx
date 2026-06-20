@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { BoardPage } from "./pages/BoardPage";
-import { InputPage } from "./pages/InputPage";
+import { AnalystHub } from "./pages/AnalystHub";
 import { LoginPage } from "./pages/LoginPage";
 import { ClarifyPage } from "./pages/ClarifyPage";
 import { PrdPage } from "./pages/PrdPage";
@@ -15,7 +15,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/analyst" element={<InputPage />} />
+      <Route path="/analyst" element={<AnalystHub />} />
       <Route path="/board" element={<BoardPage />} />
       <Route path="/r/:rid" element={<Navigate to="clarify" replace />} />
       <Route path="/r/:rid/clarify" element={<ClarifyPage />} />

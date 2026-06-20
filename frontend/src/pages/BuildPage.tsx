@@ -42,7 +42,7 @@ export function BuildPage() {
   const file = data.files[activeFile];
 
   return (
-    <Layout current="build">
+    <Layout current="build" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">7. dbt 代码生成</h2>
         <p className="mt-1 text-sm text-slate-500">

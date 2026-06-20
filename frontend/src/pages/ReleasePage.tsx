@@ -34,7 +34,7 @@ export function ReleasePage() {
   if (loading || !data) return <Layout current="release"><Loading text="正在汇总验证结果..." /></Layout>;
 
   return (
-    <Layout current="release">
+    <Layout current="release" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">9. 上线建议</h2>
         <div className="mt-4">

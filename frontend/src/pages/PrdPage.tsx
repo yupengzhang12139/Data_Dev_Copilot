@@ -39,7 +39,7 @@ export function PrdPage() {
   };
 
   return (
-    <Layout current="prd">
+    <Layout current="prd" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">3. PRD 预览</h2>
         <p className="mt-1 text-sm text-slate-500">

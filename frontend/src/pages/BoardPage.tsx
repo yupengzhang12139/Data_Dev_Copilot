@@ -33,7 +33,7 @@ export function BoardPage() {
   if (loading) return <Layout current="board"><Loading text="正在加载公共需求看板..." /></Layout>;
 
   return (
-    <Layout current="board">
+    <Layout current="board" noSidebar>
       <section className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

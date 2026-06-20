@@ -62,7 +62,7 @@ export function ClarifyPage() {
   const pending: string[] = state.pending ?? [];
 
   return (
-    <Layout current="clarify">
+    <Layout current="clarify" noSidebar>
       <section className="card p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">2. 需求澄清</h2>

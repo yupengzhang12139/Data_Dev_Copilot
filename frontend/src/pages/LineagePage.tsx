@@ -43,7 +43,7 @@ export function LineagePage() {
   }
 
   return (
-    <Layout current="lineage">
+    <Layout current="lineage" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">5. 数据地图</h2>
         <p className="mt-1 text-sm text-slate-500">

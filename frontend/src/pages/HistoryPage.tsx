@@ -26,7 +26,7 @@ export function HistoryPage() {
   if (loading || !data) return <Layout current="history"><Loading text="正在扫描 dbt 仓库..." /></Layout>;
 
   return (
-    <Layout current="history">
+    <Layout current="history" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">4. 历史指标关联</h2>
         <p className="mt-1 text-sm text-slate-500">

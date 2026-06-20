@@ -60,7 +60,7 @@ export function ConflictPage() {
   const actionLabel = role === "developer" ? "继续 dbt 代码生成" : "发布需求";
 
   return (
-    <Layout current="conflict">
+    <Layout current="conflict" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">6. 口径确认</h2>
         <p className="mt-1 text-sm text-slate-500">

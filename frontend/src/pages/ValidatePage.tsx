@@ -40,7 +40,7 @@ export function ValidatePage() {
   };
 
   return (
-    <Layout current="validate">
+    <Layout current="validate" noSidebar>
       <section className="card p-6">
         <h2 className="text-lg font-semibold">8. 开发/测试环境验证</h2>
         <div className="mt-2 flex items-center gap-3 text-sm">
